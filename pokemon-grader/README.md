@@ -146,7 +146,150 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Run email server locally
+npm run dev:server
 ```
+
+---
+
+## Email Mode Setup
+
+Send a card photo to an email address and receive a full grading report in your inbox — no web browser required.
+
+### Architecture
+
+```
+Your email → Resend inbound → Railway server → Claude Vision API → Resend outbound → Your inbox
+```
+
+**Services used:**
+
+| Service | Role | Cost |
+|---------|------|------|
+| [Resend](https://resend.com) | Inbound + outbound email | Free (3,000/month) |
+| [Railway](https://railway.app) | Hosts the Express server | $5/month (Hobby plan) |
+| Anthropic API | AI card analysis | Pay-per-use |
+
+---
+
+### Step 1 — Create a Resend account
+
+1. Go to [resend.com](https://resend.com) → Sign up free
+2. Navigate to **Domains** → Add your domain and verify DNS records
+   *(or use a Resend-provided subdomain for testing)*
+3. Navigate to **API Keys** → Create a key with full access
+4. Navigate to **Domains → [your domain] → Inbound**:
+   - Enable inbound email
+   - Set the MX records Resend shows you in your DNS provider
+5. Navigate to **Webhooks** → Add Webhook:
+   - URL: `https://your-app.railway.app/webhook/inbound`
+   - Event: `email.received`
+
+---
+
+### Step 2 — Deploy to Railway
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login
+railway login
+
+# Create a new project (from the pokemon-grader directory)
+cd pokemon-grader
+railway new
+
+# Link this directory to the project
+railway link
+```
+
+Add environment variables in the Railway dashboard (**Settings → Variables**):
+
+| Variable | Value |
+|----------|-------|
+| `ANTHROPIC_API_KEY` | Your Anthropic API key |
+| `RESEND_API_KEY` | Your Resend API key |
+| `FROM_EMAIL` | `grader@yourdomain.com` (verified in Resend) |
+
+Then deploy:
+
+```bash
+railway up
+```
+
+Railway will detect the `railway.json` config and start `node server/index.js`.
+The server runs on the port Railway assigns via `$PORT`.
+
+Verify the deployment:
+```bash
+curl https://your-app.railway.app/health
+# → {"status":"ok","service":"pokegrade-server"}
+```
+
+---
+
+### Step 3 — Test it
+
+Send an email to your inbound address (the address at your Resend inbound domain):
+
+- **Subject**: anything (e.g., `Charizard Base Set Holo`)
+- **Attachments**: exactly 2 image files (card front + card back)
+  - Accepted formats: JPG, PNG, WEBP
+  - Max size: 5MB each
+- **Wait**: ~20–40 seconds for Claude to analyze and the reply to arrive
+
+You will receive a reply with:
+- TAG composite grade and four sub-grades
+- PSA equivalent estimate
+- Centering ratios
+- Detected defects
+- Analysis summary
+
+---
+
+### Step 4 — Validation error emails
+
+If the submission is invalid, the sender receives an automated reply:
+
+| Problem | Reply subject |
+|---------|--------------|
+| No attachments | "Missing card images" |
+| Only 1 image | "Missing one card image" |
+| More than 2 images | "Too many attachments" |
+| Wrong file type | "Unsupported file type" |
+| Image >5MB | "Image too large" |
+
+---
+
+### Local development
+
+```bash
+# Copy env file and fill in values
+cp .env.example .env
+
+# Run the server locally
+npm run dev:server
+# → Listening on http://localhost:3001
+
+# Test the health endpoint
+curl http://localhost:3001/health
+
+# Test with a simulated Resend webhook (requires a real email_id from Resend)
+curl -X POST http://localhost:3001/webhook/inbound \
+  -H "Content-Type: application/json" \
+  -d '{"type":"email.received","data":{"email_id":"re_test123","from":"test@example.com","subject":"Test Card"}}'
+```
+
+---
+
+### Important Limits (Resend free plan)
+
+- **3,000 emails/month combined** (inbound + outbound count together)
+- **100 emails/day** combined
+- Each graded card uses 2 email credits (1 inbound + 1 outbound reply)
+- Effective free capacity: **~50 cards/day, ~1,500 cards/month**
 
 ---
 

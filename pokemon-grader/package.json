@@ -6,14 +6,21 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server/index.js",
+    "dev:server": "nodemon server/index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1",
+    "html2canvas": "^1.4.1",
+    "lucide-react": "^0.344.0",
+    "multer": "^2.1.1",
+    "nodemon": "^3.1.14",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@anthropic-ai/sdk": "^0.39.0",
-    "html2canvas": "^1.4.1",
-    "lucide-react": "^0.344.0"
+    "resend": "^6.10.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
