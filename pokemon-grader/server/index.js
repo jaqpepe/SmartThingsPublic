@@ -5,7 +5,9 @@
 
 require('dotenv').config();
 
-const express    = require('express');
+const express = require('express');
+const path    = require('path');
+const fs      = require('fs');
 const inboundRouter = require('./routes/inbound.js');
 
 // ── Validate required env vars at startup ─────────────────────────────────────
@@ -21,7 +23,7 @@ if (missing.length > 0) {
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
-// Parse JSON and urlencoded bodies (Resend/Mailgun may use either)
+// Parse JSON and urlencoded bodies
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
@@ -35,9 +37,21 @@ app.get('/health', (_req, res) => {
 // Inbound email webhook
 app.use('/', inboundRouter);
 
+// ── Serve React frontend from dist/ (built by `npm run build`) ────────────────
+const distDir = path.join(__dirname, '..', 'dist');
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir));
+  // SPA fallback — all non-API routes serve index.html (Express 5 wildcard syntax)
+  app.get('/{*path}', (_req, res) => {
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+  console.log(`[server] Serving frontend from ${distDir}`);
+} else {
+  console.log('[server] No dist/ folder found — frontend not served (run npm run build)');
+}
+
 // ── Global error handler ──────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
-  // Never expose internal error details to callers
   console.error('[server] unhandled error:', err.message);
   res.status(500).json({ error: 'Internal server error' });
 });
@@ -45,6 +59,7 @@ app.use((err, _req, res, _next) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`[server] PokéGrader AI listening on port ${PORT}`);
-  console.log(`[server] Health: http://localhost:${PORT}/health`);
-  console.log(`[server] Webhook: http://localhost:${PORT}/webhook/inbound`);
+  console.log(`[server] Health:   http://localhost:${PORT}/health`);
+  console.log(`[server] Webhook:  http://localhost:${PORT}/webhook/inbound`);
+  console.log(`[server] Frontend: http://localhost:${PORT}/`);
 });
