@@ -1,209 +1,196 @@
 import { extractCenteringData, getCenteringStatusColor, getCenteringStatusLabel } from '../utils/centeringCalc.js';
 
 const THRESHOLDS = [
-  { label: 'Gem Mint (PSA 10)', ratio: '55/45', color: '#22c55e' },
-  { label: 'Mint (PSA 9)', ratio: '60/40', color: '#84cc16' },
-  { label: 'NM-MT (PSA 8)', ratio: '65/35', color: '#eab308' },
-  { label: 'Near Mint (PSA 7)', ratio: '70/30', color: '#f97316' },
+  { label: 'PSA 10 — Gem Mint', ratio: '55/45', color: '#22c55e' },
+  { label: 'PSA 9  — Mint',     ratio: '60/40', color: '#84cc16' },
+  { label: 'PSA 8  — NM-MT',   ratio: '65/35', color: '#eab308' },
+  { label: 'PSA 7  — NM',      ratio: '70/30', color: '#f97316' },
 ];
 
-function CenteringDiagram({ title, leftRight, topBottom, lrStatus, tbStatus }) {
+/**
+ * Renders a card image with centering measurement lines overlaid.
+ * leftRight / topBottom are { larger, smaller, formatted } objects.
+ */
+function CardWithOverlay({ title, imageUrl, leftRight, topBottom, lrStatus, tbStatus, notes }) {
   if (!leftRight || !topBottom) return null;
 
-  // Calculate border percentages
-  // leftRight: {larger, smaller} → left border = smaller/total, right = larger/total
-  const lrTotal = leftRight.larger + leftRight.smaller;
-  const leftPct = (leftRight.smaller / lrTotal) * 100;
-  const rightPct = (leftRight.larger / lrTotal) * 100;
+  const lrTotal   = leftRight.larger + leftRight.smaller;
+  const leftPct   = (leftRight.smaller / lrTotal) * 100;   // narrower side = left
+  const rightPct  = (leftRight.larger  / lrTotal) * 100;
 
-  const tbTotal = topBottom.larger + topBottom.smaller;
-  const topPct = (topBottom.smaller / tbTotal) * 100;
-  const bottomPct = (topBottom.larger / tbTotal) * 100;
+  const tbTotal   = topBottom.larger + topBottom.smaller;
+  const topPct    = (topBottom.smaller / tbTotal) * 100;
+  const bottomPct = (topBottom.larger  / tbTotal) * 100;
 
   const lrColor = getCenteringStatusColor(lrStatus);
   const tbColor = getCenteringStatusColor(tbStatus);
+  const lrLabel = getCenteringStatusLabel(lrStatus);
+  const tbLabel = getCenteringStatusLabel(tbStatus);
+
+  // Content-area inner bounds as CSS percentages
+  const innerLeft   = leftPct;
+  const innerTop    = topPct;
+  const innerRight  = rightPct;
+  const innerBottom = bottomPct;
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <h4 className="text-sm font-mono text-platinum/60 uppercase tracking-wider">{title}</h4>
+    <div className="flex flex-col gap-3">
+      <h4 className="text-sm font-mono text-platinum/70 uppercase tracking-wider text-center">{title}</h4>
 
-      {/* Visual card diagram */}
-      <div className="relative" style={{ width: 160, height: 220 }}>
-        {/* Outer card boundary */}
-        <div className="absolute inset-0 border-2 border-platinum/20 rounded" />
+      {/* Image + overlay container */}
+      <div className="relative mx-auto rounded-xl overflow-hidden shadow-2xl border border-platinum/10"
+           style={{ width: 200, aspectRatio: '63/88' }}>
 
-        {/* Inner card content area */}
-        <div
-          className="absolute bg-charcoal-mid/80 border border-platinum/10 rounded-sm"
-          style={{
-            left: `${leftPct}%`,
-            top: `${topPct}%`,
-            right: `${rightPct}%`,
-            bottom: `${bottomPct}%`,
-          }}
-        />
+        {/* Card image */}
+        {imageUrl
+          ? <img src={imageUrl} alt={`Card ${title}`}
+                 className="absolute inset-0 w-full h-full object-cover" />
+          : <div className="absolute inset-0 bg-charcoal-surface flex items-center justify-center">
+              <span className="text-platinum/20 text-xs font-mono">No image</span>
+            </div>
+        }
 
-        {/* Border measurement lines */}
-        {/* Left border */}
-        <div
-          className="absolute top-1/2 flex items-center"
-          style={{ left: 0, width: `${leftPct}%`, transform: 'translateY(-50%)' }}
-        >
-          <div className="w-full h-px" style={{ background: lrColor, opacity: 0.8 }} />
-        </div>
+        {/* Semi-transparent border zones */}
+        {/* Left border zone */}
+        <div className="absolute top-0 bottom-0 left-0"
+             style={{ width: `${leftPct}%`, background: `${lrColor}22` }} />
+        {/* Right border zone */}
+        <div className="absolute top-0 bottom-0 right-0"
+             style={{ width: `${rightPct}%`, background: `${lrColor}22` }} />
+        {/* Top border zone */}
+        <div className="absolute left-0 right-0 top-0"
+             style={{ height: `${topPct}%`, background: `${tbColor}22` }} />
+        {/* Bottom border zone */}
+        <div className="absolute left-0 right-0 bottom-0"
+             style={{ height: `${bottomPct}%`, background: `${tbColor}22` }} />
 
-        {/* Right border */}
-        <div
-          className="absolute top-1/2 flex items-center justify-end"
-          style={{ right: 0, width: `${rightPct}%`, transform: 'translateY(-50%)' }}
-        >
-          <div className="w-full h-px" style={{ background: lrColor, opacity: 0.8 }} />
-        </div>
+        {/* Left edge line */}
+        <div className="absolute top-0 bottom-0"
+             style={{ left: `${innerLeft}%`, width: 2, background: lrColor, opacity: 0.9,
+                      boxShadow: `0 0 6px ${lrColor}` }} />
+        {/* Right edge line */}
+        <div className="absolute top-0 bottom-0"
+             style={{ right: `${innerRight}%`, width: 2, background: lrColor, opacity: 0.9,
+                      boxShadow: `0 0 6px ${lrColor}` }} />
+        {/* Top edge line */}
+        <div className="absolute left-0 right-0"
+             style={{ top: `${innerTop}%`, height: 2, background: tbColor, opacity: 0.9,
+                      boxShadow: `0 0 6px ${tbColor}` }} />
+        {/* Bottom edge line */}
+        <div className="absolute left-0 right-0"
+             style={{ bottom: `${innerBottom}%`, height: 2, background: tbColor, opacity: 0.9,
+                      boxShadow: `0 0 6px ${tbColor}` }} />
 
-        {/* Top border */}
-        <div
-          className="absolute left-1/2 flex flex-col items-center"
-          style={{ top: 0, height: `${topPct}%`, transform: 'translateX(-50%)' }}
-        >
-          <div className="w-px h-full" style={{ background: tbColor, opacity: 0.8 }} />
-        </div>
-
-        {/* Bottom border */}
-        <div
-          className="absolute left-1/2 flex flex-col items-end justify-end"
-          style={{ bottom: 0, height: `${bottomPct}%`, transform: 'translateX(-50%)' }}
-        >
-          <div className="w-px h-full" style={{ background: tbColor, opacity: 0.8 }} />
-        </div>
-
-        {/* Percentage labels */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Left % */}
-          <span
-            className="absolute text-xs font-mono font-bold"
-            style={{
-              left: 2,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: lrColor,
-              fontSize: 9,
-            }}
-          >
+        {/* ── Percentage labels ─────────────────────────────────── */}
+        {/* Left % — inside left border zone, vertically centered */}
+        <div className="absolute flex items-center justify-center pointer-events-none"
+             style={{ left: 0, width: `${leftPct}%`, top: '40%', transform: 'translateY(-50%)' }}>
+          <span className="font-mono font-black text-shadow"
+                style={{ fontSize: 10, color: lrColor, textShadow: '0 1px 4px #000, 0 0 8px #000',
+                         writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
             {leftPct.toFixed(0)}%
           </span>
-          {/* Right % */}
-          <span
-            className="absolute text-xs font-mono font-bold"
-            style={{
-              right: 2,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: lrColor,
-              fontSize: 9,
-            }}
-          >
+        </div>
+        {/* Right % */}
+        <div className="absolute flex items-center justify-center pointer-events-none"
+             style={{ right: 0, width: `${rightPct}%`, top: '40%', transform: 'translateY(-50%)' }}>
+          <span className="font-mono font-black"
+                style={{ fontSize: 10, color: lrColor, textShadow: '0 1px 4px #000, 0 0 8px #000',
+                         writingMode: 'vertical-rl' }}>
             {rightPct.toFixed(0)}%
           </span>
-          {/* Top % */}
-          <span
-            className="absolute font-mono font-bold"
-            style={{
-              top: 2,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              color: tbColor,
-              fontSize: 9,
-            }}
-          >
+        </div>
+        {/* Top % */}
+        <div className="absolute flex items-center justify-center pointer-events-none"
+             style={{ top: 0, height: `${topPct}%`, left: '50%', transform: 'translateX(-50%)' }}>
+          <span className="font-mono font-black"
+                style={{ fontSize: 10, color: tbColor, textShadow: '0 1px 4px #000, 0 0 8px #000' }}>
             {topPct.toFixed(0)}%
           </span>
-          {/* Bottom % */}
-          <span
-            className="absolute font-mono font-bold"
-            style={{
-              bottom: 2,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              color: tbColor,
-              fontSize: 9,
-            }}
-          >
+        </div>
+        {/* Bottom % */}
+        <div className="absolute flex items-center justify-center pointer-events-none"
+             style={{ bottom: 0, height: `${bottomPct}%`, left: '50%', transform: 'translateX(-50%)' }}>
+          <span className="font-mono font-black"
+                style={{ fontSize: 10, color: tbColor, textShadow: '0 1px 4px #000, 0 0 8px #000' }}>
             {bottomPct.toFixed(0)}%
           </span>
         </div>
       </div>
 
-      {/* Ratio display */}
-      <div className="flex flex-col items-center gap-1 text-center">
-        <div className="flex items-center gap-3 text-xs font-mono">
-          <span style={{ color: lrColor }}>L/R: {leftRight.formatted}</span>
-          <span className="text-platinum/30">|</span>
-          <span style={{ color: tbColor }}>T/B: {topBottom.formatted}</span>
+      {/* Ratio + status pills */}
+      <div className="flex flex-col items-center gap-1.5">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs px-2 py-0.5 rounded-full border"
+                style={{ color: lrColor, borderColor: lrColor + '55', background: lrColor + '15' }}>
+            L/R {leftRight.formatted}
+          </span>
+          <span className="font-mono text-xs px-2 py-0.5 rounded-full border"
+                style={{ color: tbColor, borderColor: tbColor + '55', background: tbColor + '15' }}>
+            T/B {topBottom.formatted}
+          </span>
         </div>
-        <div className="flex items-center gap-3 text-xs">
-          <span style={{ color: lrColor }}>{getCenteringStatusLabel(lrStatus)}</span>
-          <span className="text-platinum/30">|</span>
-          <span style={{ color: tbColor }}>{getCenteringStatusLabel(tbStatus)}</span>
+        <div className="flex items-center gap-2 text-xs text-platinum/50 font-mono">
+          <span style={{ color: lrColor }}>{lrLabel}</span>
+          <span className="text-platinum/20">·</span>
+          <span style={{ color: tbColor }}>{tbLabel}</span>
         </div>
+        {notes && (
+          <p className="text-xs font-mono text-platinum/35 text-center max-w-[200px]">{notes}</p>
+        )}
       </div>
     </div>
   );
 }
 
-export default function CenteringVisualizer({ centering }) {
+export default function CenteringVisualizer({ centering, frontImage, backImage }) {
   const data = extractCenteringData(centering);
   if (!data) return null;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap justify-center gap-8">
+
+      {/* Card images with overlay */}
+      <div className="flex flex-wrap justify-center gap-10">
         {data.front?.leftRight && data.front?.topBottom && (
-          <CenteringDiagram
+          <CardWithOverlay
             title="Front"
+            imageUrl={frontImage}
             leftRight={data.front.leftRight}
             topBottom={data.front.topBottom}
             lrStatus={data.front.lrStatus}
             tbStatus={data.front.tbStatus}
+            notes={data.front.notes}
           />
         )}
         {data.back?.leftRight && data.back?.topBottom && (
-          <CenteringDiagram
+          <CardWithOverlay
             title="Back"
+            imageUrl={backImage}
             leftRight={data.back.leftRight}
             topBottom={data.back.topBottom}
             lrStatus={data.back.lrStatus}
             tbStatus={data.back.tbStatus}
+            notes={data.back.notes}
           />
         )}
       </div>
 
       {/* PSA Reference Guide */}
-      <div className="border border-platinum/10 rounded-lg p-4">
-        <h5 className="text-xs font-mono text-platinum/50 uppercase tracking-wider mb-3">
+      <div className="border border-platinum/10 rounded-lg p-4 bg-charcoal/30">
+        <h5 className="text-xs font-mono text-platinum/40 uppercase tracking-wider mb-3">
           PSA Centering Tolerance Reference
         </h5>
         <div className="grid grid-cols-2 gap-2">
           {THRESHOLDS.map(({ label, ratio, color }) => (
             <div key={label} className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-              <span className="text-xs font-mono text-platinum/60">
-                {label}
-              </span>
-              <span className="text-xs font-mono ml-auto" style={{ color }}>
-                {ratio}
-              </span>
+              <span className="text-xs font-mono text-platinum/50">{label}</span>
+              <span className="text-xs font-mono font-bold ml-auto" style={{ color }}>{ratio}</span>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Notes */}
-      {(data.front?.notes || data.back?.notes) && (
-        <div className="text-xs text-platinum/50 font-mono space-y-1">
-          {data.front?.notes && <p><span className="text-platinum/30">Front:</span> {data.front.notes}</p>}
-          {data.back?.notes && <p><span className="text-platinum/30">Back:</span> {data.back.notes}</p>}
-        </div>
-      )}
     </div>
   );
 }

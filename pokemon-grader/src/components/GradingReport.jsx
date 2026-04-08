@@ -370,7 +370,7 @@ export default function GradingReport({ analysis, onReset }) {
       {/* Detailed sections */}
       <div className="space-y-4">
         <Section title="Centering Analysis" icon="⊕" defaultOpen={true}>
-          <CenteringVisualizer centering={centering} />
+          <CenteringVisualizer centering={centering} frontImage={_images?.front} backImage={_images?.back} />
         </Section>
 
         <Section title="Corner Analysis" icon="⬡" defaultOpen={true}>
