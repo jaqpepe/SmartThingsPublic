@@ -110,7 +110,7 @@ Open your browser to `http://localhost:3000`
 - **Lighting dependency**: Poor lighting in photos will reduce accuracy. Holo scratches in particular require raking light to be visible.
 - **Centering measurement**: Border width estimation from photos is approximate. Actual PSA/TAG measurements use physical tools.
 - **Not a substitute**: This tool provides reference grades only. Official PSA/TAG grades require physical examination by certified graders.
-- **API costs**: Each analysis call uses Claude claude-sonnet-4-20250514 vision tokens. Check [Anthropic pricing](https://www.anthropic.com/pricing) for cost estimates.
+- **API costs**: Each analysis call uses Claude claude-sonnet-4-6 vision tokens. Check [Anthropic pricing](https://www.anthropic.com/pricing) for cost estimates.
 
 ---
 
@@ -129,7 +129,7 @@ PokéGrader AI is an **independent educational tool** created for reference purp
 
 - **React 18** + **Vite** — Frontend framework
 - **Tailwind CSS** — Styling
-- **Claude claude-sonnet-4-20250514** — AI vision analysis (Anthropic)
+- **Claude claude-sonnet-4-6** — AI vision analysis (Anthropic)
 - **html2canvas** — Report export
 - **lucide-react** — Icons
 
